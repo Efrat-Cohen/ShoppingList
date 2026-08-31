@@ -1,0 +1,7 @@
+# process notes, not part of the submission
+NOTES.local.md
+.claude/
+
+.DS_Store
+.idea/
+.vscode/
