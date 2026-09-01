@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../app/hooks';
 import { AppHeader } from '../components/AppHeader';
 import { CartSlip } from '../components/CartSlip';
+import { OrderConfirmation } from '../components/OrderConfirmation';
 import { clearCart } from '../features/cart/cartSlice';
 import { resetOrder, submitOrder } from '../features/order/orderSlice';
 import { strings } from '../i18n/strings';
@@ -50,25 +51,14 @@ export function OrderSummaryPage() {
     return (
       <div className="shell">
         <AppHeader step={2} />
-        <div className="card done">
-          <h2>{strings.done.title}</h2>
-          <p>{strings.done.body}</p>
-          <p className="done-id">
-            <span>{strings.done.orderNumber}</span>
-            <code>{orderId}</code>
-          </p>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => {
-              dispatch(clearCart());
-              dispatch(resetOrder());
-              navigate('/');
-            }}
-          >
-            {strings.done.again}
-          </button>
-        </div>
+        <OrderConfirmation
+          orderId={orderId}
+          onRestart={() => {
+            dispatch(clearCart());
+            dispatch(resetOrder());
+            navigate('/');
+          }}
+        />
       </div>
     );
   }
