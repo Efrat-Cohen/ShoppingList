@@ -16,18 +16,20 @@ export type Customer = {
   email: string;
 };
 
-// What the browser sends: an id and a quantity. Nothing else is trusted from the client.
-export type OrderLine = {
+export type OrderItem = {
   productId: number;
-  quantity: number;
-};
-
-// What the orders service stores, once this service has filled in the product details.
-export type OrderItem = OrderLine & {
   productName: string;
   categoryId: number;
   categoryName: string;
   unit: string;
+  quantity: number;
+};
+
+export type Order = {
+  orderId: string;
+  customer: Customer;
+  items: OrderItem[];
+  createdAt: string;
 };
 
 export type FieldError = {

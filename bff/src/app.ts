@@ -25,7 +25,7 @@ export function createApp({ catalog, orders, allowedOrigins }: Dependencies) {
   });
 
   app.use('/api/catalog', createCatalogRouter(catalog));
-  app.use('/api/orders', createOrdersRouter(catalog, orders));
+  app.use('/api/orders', createOrdersRouter(orders));
 
   app.use(handleErrors);
 
@@ -41,6 +41,17 @@ const handleErrors: ErrorRequestHandler = (error, _req, res, _next) => {
     return;
   }
 
-  console.error(error);
-  res.status(500).json({ errors: [{ field: '', code: 'server_error' }] });
+  // express.json() rejects a malformed or oversized body with its own status. Keeping it
+  // stops someone else's bad request from being reported as a failure of ours.
+  const status = typeof (error as { status?: unknown })?.status === 'number'
+    ? (error as { status: number }).status
+    : 500;
+
+  if (status >= 500) {
+    console.error(error);
+    res.status(500).json({ errors: [{ field: '', code: 'server_error' }] });
+    return;
+  }
+
+  res.status(status).json({ errors: [{ field: '', code: 'invalid_request' }] });
 };

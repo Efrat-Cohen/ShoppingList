@@ -55,15 +55,18 @@ quantity rather than adding a second line.
 
 **Screen two - order summary.** Full name, address and email, all required, plus an email
 format check. The selected products and their quantities are listed next to the form.
-"אשר הזמנה" posts the order to the BFF, which resolves the products, hands the result to the
-orders service, and answers with an order id.
+"אשר הזמנה" posts the order to the BFF, which validates it, hands it to the orders service,
+and answers with an order id.
 
 ## A few decisions worth explaining
 
-**The BFF earns its place.** It is not a proxy. The browser posts only product ids and
-quantities; the BFF looks the products up in the catalog service and fills in names, units
-and categories before handing the order on. A client cannot decide what it is ordering by
-editing the payload, and the two screens get one API instead of two.
+**The BFF is the single entry point.** The frontend has one backend to know about and one
+error vocabulary, and does not need to know that categories come from a .NET service and
+orders go to a Node one. It deliberately does not re-fetch the catalog when an order is
+submitted: the client loaded it on page load and picked each product out of a category, so a
+cart line already carries the product name, unit and category. What the BFF does at that
+boundary is validate, reject a product that appears twice, and normalise failures from either
+service.
 
 **The BFF's dependencies are injected.** `bff/src/services/types.ts` declares the two ports
 it is written against. `bff/src/index.ts` is the only file that picks the HTTP
@@ -82,7 +85,7 @@ does the same in development. CORS never comes up in the browser.
 
 **All Hebrew lives in one file.** [`frontend/src/i18n/strings.ts`](frontend/src/i18n/strings.ts)
 holds every string the user sees, including error messages and the tab title. The backends
-validate but answer with stable codes (`required`, `invalid_email`, `unknown_product`) rather
+validate but answer with stable codes (`required`, `invalid_email`, `duplicate_product`) rather
 than sentences, and the frontend turns those into Hebrew.
 
 ## What is not here

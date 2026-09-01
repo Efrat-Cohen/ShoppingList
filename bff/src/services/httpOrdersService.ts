@@ -1,4 +1,4 @@
-import { UpstreamError, type FieldError } from '../types';
+import { UpstreamError, type FieldError, type Order } from '../types';
 import type { OrdersService } from './types';
 
 export function createHttpOrdersService(baseUrl: string): OrdersService {
@@ -36,7 +36,13 @@ export function createHttpOrdersService(baseUrl: string): OrdersService {
         throw new UpstreamError(502, fallback);
       }
 
-      return response.json();
+      const body = (await response.json().catch(() => null)) as Order | null;
+
+      if (!body) {
+        throw new UpstreamError(502, fallback);
+      }
+
+      return body;
     },
   };
 }

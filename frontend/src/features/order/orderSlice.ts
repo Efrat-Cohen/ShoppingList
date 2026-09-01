@@ -26,15 +26,7 @@ export const submitOrder = createAsyncThunk<
     response = await fetch(ORDERS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      // Only the id and the quantity travel. Product names and categories are resolved
-      // server-side from the catalog, so the cart cannot misreport what was ordered.
-      body: JSON.stringify({
-        customer: payload.customer,
-        items: payload.items.map((item) => ({
-          productId: item.productId,
-          quantity: item.quantity,
-        })),
-      }),
+      body: JSON.stringify(payload),
     });
   } catch {
     return rejectWithValue([{ field: '', code: 'network' }]);

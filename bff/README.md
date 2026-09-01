@@ -3,23 +3,18 @@
 The backend for frontend. The only backend the browser talks to; it sits in front of
 `catalogService` and `ordersService` and neither of them is exposed to the host.
 
-## What it actually does
+## What it does
 
-It is not a proxy. Two jobs earn it its place:
+It is the single entry point. The frontend has one backend to know about, one origin, one
+error vocabulary - it does not need to know that categories come from a .NET service and
+orders go to a Node one, or that either might move.
 
-**It resolves products.** The browser posts an order as ids and quantities only:
-
-```json
-{ "customer": { "...": "..." }, "items": [{ "productId": 16, "quantity": 2 }] }
-```
-
-The BFF looks each id up in the catalog service and fills in the product name, unit, category
-id and category name before handing the order to the orders service. The client is never the
-source of truth for what it is buying, and an id that is not in the catalog comes back as
-`unknown_product` instead of being stored.
-
-**It gives the two screens one API.** Screen one reads from the catalog service, screen two
-writes to the orders service, and the frontend does not need to know that.
+It does not re-fetch the catalog to build an order. The client loaded the whole catalog on
+page load and picked each product out of a category, so a cart line already carries the
+product name, unit and category. Asking the catalog service again on every submit would be a
+round trip for data the caller already holds. What this service does do at that boundary is
+validate the shape, reject a product that appears on two lines, and normalise failures from
+either service into the same `{ field, code }` envelope.
 
 ## Dependency injection
 
