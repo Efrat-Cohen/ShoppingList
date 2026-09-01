@@ -22,9 +22,13 @@ own and call it directly.
 
 ## Running it
 
-Docker is the only thing you need installed.
+Docker is the only thing you need installed - no .NET SDK, no Node, no SQL Server, no
+Elasticsearch. Docker Desktop on Windows or macOS, or Docker Engine with the Compose plugin
+on Linux.
 
 ```bash
+git clone <repository-url>
+cd homeTest
 docker compose up --build
 ```
 
@@ -44,6 +48,35 @@ minutes. Give Docker at least 4 GB of memory; SQL Server alone wants 2 GB.
 | The app | http://localhost:3000 |
 | BFF | http://localhost:4100/api/catalog |
 | Elasticsearch | http://localhost:9200/orders/_search |
+
+`catalogService`, `ordersService` and SQL Server are on the internal network only - the BFF is
+the entry point. To reach one directly, use its own compose file, or go through a container
+that is on the network:
+
+```bash
+docker compose exec bff node -e "fetch('http://catalog-service:8080/api/products').then(r => r.text()).then(console.log)"
+```
+
+### Checking it worked
+
+```bash
+docker compose ps                          # six services, the five with checks say healthy
+curl http://localhost:3000/api/catalog     # 6 categories, 33 products
+curl http://localhost:9200/orders/_search  # orders you have placed
+```
+
+### If something goes wrong
+
+| Symptom | Cause and fix |
+| --- | --- |
+| `port is already allocated` | Something else holds 3000, 4100 or 9200. Change the left-hand number of the `ports:` entry in `docker-compose.yml`. |
+| `catalog-service` never turns healthy | SQL Server wants 2 GB to itself. Raise Docker's memory limit to at least 4 GB and bring the stack up again. |
+| `elasticsearch` exits straight away on Linux | `vm.max_map_count` is too low: `sudo sysctl -w vm.max_map_count=262144`. |
+| The page loads but the catalog does not | `docker compose logs catalog-service bff`. The catalog service is most likely still applying migrations. |
+| The first build looks stuck | It is pulling around 4 GB of images. `docker compose logs -f` shows progress. |
+
+To start over from empty databases, take the stack down with the volumes removed
+(`docker compose down` with the `-v` flag) and bring it up again.
 
 ## The two screens
 
