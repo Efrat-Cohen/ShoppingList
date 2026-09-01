@@ -8,7 +8,7 @@ type Props = {
 };
 
 export function QuantityInput({ id, value, onChange }: Props) {
-  const clamp = (next: number) => Math.min(MAX_QUANTITY, Math.max(1, next));
+  const clamp = (next: number) => Math.min(MAX_QUANTITY, Math.max(1, Math.round(next)));
 
   return (
     <div className="qty">
@@ -26,6 +26,7 @@ export function QuantityInput({ id, value, onChange }: Props) {
         type="number"
         inputMode="numeric"
         min={1}
+        step={1}
         max={MAX_QUANTITY}
         value={value}
         onChange={(event) => {
