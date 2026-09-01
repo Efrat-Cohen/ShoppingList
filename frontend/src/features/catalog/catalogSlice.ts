@@ -1,16 +1,18 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import type { Category } from '../../types';
+import type { Catalog, Category, Product } from '../../types';
 
-// Same-origin path. In development Vite proxies it to the .NET API, in docker nginx does.
-const CATALOG_URL = '/api/catalog/categories';
+// Same-origin path. In development Vite proxies it to the BFF, in docker nginx does.
+const CATALOG_URL = '/api/catalog';
 
 type CatalogState = {
   categories: Category[];
+  products: Product[];
   status: 'idle' | 'loading' | 'succeeded' | 'failed';
 };
 
 const initialState: CatalogState = {
   categories: [],
+  products: [],
   status: 'idle',
 };
 
@@ -21,7 +23,7 @@ export const fetchCatalog = createAsyncThunk('catalog/fetch', async () => {
     throw new Error(`catalog request failed with status ${response.status}`);
   }
 
-  return (await response.json()) as Category[];
+  return (await response.json()) as Catalog;
 });
 
 const catalogSlice = createSlice({
@@ -35,7 +37,8 @@ const catalogSlice = createSlice({
       })
       .addCase(fetchCatalog.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.categories = action.payload;
+        state.categories = action.payload.categories;
+        state.products = action.payload.products;
       })
       .addCase(fetchCatalog.rejected, (state) => {
         state.status = 'failed';

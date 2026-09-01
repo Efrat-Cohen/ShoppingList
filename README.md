@@ -42,13 +42,13 @@ minutes. Give Docker at least 4 GB of memory; SQL Server alone wants 2 GB.
 | Reachable from the host | URL |
 | --- | --- |
 | The app | http://localhost:3000 |
-| BFF | http://localhost:4100/api/catalog/categories |
+| BFF | http://localhost:4100/api/catalog |
 | Elasticsearch | http://localhost:9200/orders/_search |
 
 ## The two screens
 
-**Screen one - shopping list.** The whole catalog, categories with their products, arrives in
-a single request when the page mounts. Two dropdowns: choosing a category filters the product
+**Screen one - shopping list.** The whole catalog arrives in a single request when the page
+mounts. Two dropdowns: choosing a category filters the product
 dropdown to that category's products. Quantity starts at 1. "הוסף מוצר לסל" puts the product
 in the cart, which is shown alongside; adding a product that is already there tops up its
 quantity rather than adding a second line.
@@ -59,6 +59,13 @@ format check. The selected products and their quantities are listed next to the 
 and answers with an order id.
 
 ## A few decisions worth explaining
+
+**Categories and products are two resources.** The catalog service exposes
+`GET /api/categories` and `GET /api/products`, and products carry a `categoryId`. Nesting the
+products inside a category would bake one screen's layout into the service's contract, and
+would mean you cannot ask for the category list without downloading the whole catalog. The
+BFF fetches both in parallel and hands the screen one payload, so a page load is still a
+single request. The store keeps the two lists flat and filters.
 
 **The BFF is the single entry point.** The frontend has one backend to know about and one
 error vocabulary, and does not need to know that categories come from a .NET service and

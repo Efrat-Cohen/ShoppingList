@@ -26,18 +26,17 @@ dotnet run --project ShopCatalog.Service
 
 ## Endpoints
 
-`GET /api/categories` returns every category with its products nested inside. The shopping
-list screen loads the whole catalog in one request, so there is no per-category endpoint.
+Two resources, not one shape for one screen. Products carry a `categoryId`; nesting them
+inside a category would make this service's contract a function of a screen's layout, which
+is the BFF's job.
 
-```json
-[
-  {
-    "id": 1,
-    "name": "פירות וירקות",
-    "products": [{ "id": 3, "name": "בננות", "unit": "ק\"ג" }]
-  }
-]
 ```
+GET /api/categories  ->  [{ "id": 1, "name": "פירות וירקות" }]
+GET /api/products    ->  [{ "id": 3, "name": "בננות", "unit": "ק\"ג", "categoryId": 1 }]
+```
+
+The BFF fetches both in parallel and hands the screen one payload, so a page load is still
+one request from the browser.
 
 `GET /health` is what the compose health check calls.
 
@@ -55,7 +54,7 @@ ShopCatalog.Service/
 ├─ Models/          Category, Product
 ├─ Data/            CatalogDbContext and the seed
 ├─ Dtos/            what the API actually returns
-├─ Controllers/     CategoriesController
+├─ Controllers/     CategoriesController, ProductsController
 └─ Migrations/      generated; the seed lives in here
 ```
 

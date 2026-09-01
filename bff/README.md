@@ -9,6 +9,12 @@ It is the single entry point. The frontend has one backend to know about, one or
 error vocabulary - it does not need to know that categories come from a .NET service and
 orders go to a Node one, or that either might move.
 
+**It composes the catalog.** The catalog service exposes categories and products as two
+resources, each describing itself. This service fetches both in parallel and returns
+`{ categories, products }`, so one page load is still one request from the browser. Shaping
+data for a screen is exactly what this layer is for - a service should not have a screen's
+layout baked into its contract.
+
 It does not re-fetch the catalog to build an order. The client loaded the whole catalog on
 page load and picked each product out of a category, so a cart line already carries the
 product name, unit and category. Asking the catalog service again on every submit would be a
@@ -49,7 +55,7 @@ CATALOG_SERVICE_URL=http://localhost:5080 ORDERS_SERVICE_URL=http://localhost:40
 
 | | |
 | --- | --- |
-| `GET /api/catalog/categories` | Every category with its products |
+| `GET /api/catalog` | `{ categories, products }` - both catalog resources, fetched in parallel |
 | `POST /api/orders` | Resolves products, then stores. `201` with `{ orderId }` |
 | `GET /api/orders/:orderId` | Reads one back |
 | `GET /health` | Compose health check |

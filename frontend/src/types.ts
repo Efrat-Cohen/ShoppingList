@@ -1,12 +1,18 @@
+export type Category = {
+  id: number;
+  name: string;
+};
+
 export type Product = {
   id: number;
   name: string;
   unit: string;
+  categoryId: number;
 };
 
-export type Category = {
-  id: number;
-  name: string;
+// One page load, one request: the BFF puts the two catalog resources together.
+export type Catalog = {
+  categories: Category[];
   products: Product[];
 };
 

@@ -12,7 +12,7 @@ export function ShoppingListPage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
-  const { categories, status } = useAppSelector((state) => state.catalog);
+  const { categories, products, status } = useAppSelector((state) => state.catalog);
   const items = useAppSelector((state) => state.cart.items);
 
   const [categoryId, setCategoryId] = useState('');
@@ -28,7 +28,8 @@ export function ShoppingListPage() {
   }, [status, dispatch]);
 
   const selectedCategory = categories.find((category) => String(category.id) === categoryId);
-  const selectedProduct = selectedCategory?.products.find((product) => String(product.id) === productId);
+  const categoryProducts = products.filter((product) => String(product.categoryId) === categoryId);
+  const selectedProduct = categoryProducts.find((product) => String(product.id) === productId);
 
   function handleCategoryChange(nextCategoryId: string) {
     setCategoryId(nextCategoryId);
@@ -108,7 +109,7 @@ export function ShoppingListPage() {
                     <option value="">
                       {selectedCategory ? strings.picker.productPlaceholder : strings.picker.productWaiting}
                     </option>
-                    {selectedCategory?.products.map((product) => (
+                    {categoryProducts.map((product) => (
                       <option key={product.id} value={product.id}>
                         {product.name}
                       </option>
