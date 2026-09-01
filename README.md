@@ -3,13 +3,22 @@
 A two-screen shopping list: pick products from a catalog, then fill in delivery details and
 send the order. The UI is in Hebrew; everything else - code, comments, docs - is in English.
 
-Three parts, each in its own folder and each runnable on its own:
+```
+browser ──▶ frontend (nginx)
+                └── /api/* ──▶ bff ──┬──▶ catalogService   .NET 10  ──▶ SQL Server
+                                     └──▶ ordersService    Express  ──▶ Elasticsearch
+```
 
 | Folder | What it is | Stack |
 | --- | --- | --- |
-| [`client/`](client) | Both screens | React 19, Redux Toolkit, Vite |
-| [`catalog-api/`](catalog-api) | Categories and products for screen one | .NET 10, EF Core, SQL Server |
-| [`orders-api/`](orders-api) | Stores submitted orders for screen two | Express 5, TypeScript, Elasticsearch |
+| [`frontend/`](frontend) | Both screens | React 19, Redux Toolkit, Vite |
+| [`bff/`](bff) | The only backend the browser talks to | Express 5, TypeScript |
+| [`catalogService/`](catalogService) | Categories and products | .NET 10, EF Core, SQL Server |
+| [`ordersService/`](ordersService) | Stores submitted orders | Express 5, TypeScript, Elasticsearch |
+
+The two services are not published to the host - the BFF is the single entry point in front
+of them. Each service folder has its own `docker-compose.yml` if you want to run one on its
+own and call it directly.
 
 ## Running it
 
@@ -21,25 +30,20 @@ docker compose up --build
 
 Then open **http://localhost:3000**.
 
-There is no setup step. The catalog API applies its migrations and seeds the database on
-startup, and the orders API creates its Elasticsearch index from
-[`orders-api/elasticsearch/orders-mapping.json`](orders-api/elasticsearch/orders-mapping.json)
-if it is missing. The web container waits for both APIs to report healthy before it starts,
-so the first page load already has data behind it.
+There is no setup step. The catalog service applies its migrations and seeds the database on
+startup, and the orders service creates its Elasticsearch index from
+[`ordersService/elasticsearch/orders-mapping.json`](ordersService/elasticsearch/orders-mapping.json)
+if it is missing. Each layer waits for the one below it to report healthy, so the first page
+load already has data behind it.
 
 The first build pulls SQL Server, Elasticsearch and the .NET SDK image - roughly 4 GB, a few
 minutes. Give Docker at least 4 GB of memory; SQL Server alone wants 2 GB.
 
-| Service | URL | Notes |
-| --- | --- | --- |
-| Web | http://localhost:3000 | The app. Also proxies both APIs, so the browser sees one origin |
-| Catalog API | http://localhost:5080/api/categories | |
-| Orders API | http://localhost:4000/api/orders | `POST` to create, `GET /:orderId` to read back |
-| SQL Server | `localhost,1433` | user `sa`, password `Str0ng.Passw0rd` |
-| Elasticsearch | http://localhost:9200/orders/_search | |
-
-Each service also has its own `docker-compose.yml` if you want to run just that one, and its
-own README with the details.
+| Reachable from the host | URL |
+| --- | --- |
+| The app | http://localhost:3000 |
+| BFF | http://localhost:4100/api/catalog/categories |
+| Elasticsearch | http://localhost:9200/orders/_search |
 
 ## The two screens
 
@@ -51,26 +55,35 @@ quantity rather than adding a second line.
 
 **Screen two - order summary.** Full name, address and email, all required, plus an email
 format check. The selected products and their quantities are listed next to the form.
-"אשר הזמנה" posts the whole thing to the orders API, which stores it in Elasticsearch and
-answers with an order id.
+"אשר הזמנה" posts the order to the BFF, which resolves the products, hands the result to the
+orders service, and answers with an order id.
 
 ## A few decisions worth explaining
+
+**The BFF earns its place.** It is not a proxy. The browser posts only product ids and
+quantities; the BFF looks the products up in the catalog service and fills in names, units
+and categories before handing the order on. A client cannot decide what it is ordering by
+editing the payload, and the two screens get one API instead of two.
+
+**The BFF's dependencies are injected.** `bff/src/services/types.ts` declares the two ports
+it is written against. `bff/src/index.ts` is the only file that picks the HTTP
+implementations; routers and the app itself never import them. Swapping either service for a
+fake is a one-line change in one place.
 
 **No prices anywhere.** The assignment does not ask for them, so the model does not carry
 them. Products do carry a unit, which is what makes a quantity mean something - "2 ק"ג"
 rather than a bare "2".
 
-**Thunks and slices, not RTK Query.** Two separate backends with one endpoint each. RTK Query
-would be infrastructure without a payoff at this size.
+**Thunks and slices, not RTK Query.** One backend with two endpoints, no caching or
+invalidation to speak of. RTK Query would be infrastructure without a payoff at this size.
 
-**One origin.** nginx proxies `/api/catalog/*` and `/api/orders/*` to the two services, and
-Vite's dev server does the same thing in development, so CORS never comes up in the browser.
-CORS is still configured on both APIs for anyone running the client from somewhere else.
+**One origin.** nginx serves the built app and proxies `/api/*` to the BFF; Vite's dev server
+does the same in development. CORS never comes up in the browser.
 
-**All Hebrew lives in one file.** [`client/src/i18n/strings.ts`](client/src/i18n/strings.ts)
-holds every string the user sees, including error messages. The orders API validates with
-zod but answers with stable codes (`required`, `invalid_email`, `empty_cart`) rather than
-sentences, and the client turns those into Hebrew. A server has no business shipping copy.
+**All Hebrew lives in one file.** [`frontend/src/i18n/strings.ts`](frontend/src/i18n/strings.ts)
+holds every string the user sees, including error messages and the tab title. The backends
+validate but answer with stable codes (`required`, `invalid_email`, `unknown_product`) rather
+than sentences, and the frontend turns those into Hebrew.
 
 ## What is not here
 
