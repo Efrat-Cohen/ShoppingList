@@ -38,6 +38,11 @@ export const submitOrder = createAsyncThunk<
     return rejectWithValue(body?.errors ?? [{ field: '', code: 'server_error' }]);
   }
 
+  // A 2xx whose body did not parse is not a success we can show anything for.
+  if (typeof body?.orderId !== 'string') {
+    return rejectWithValue([{ field: '', code: 'server_error' }]);
+  }
+
   return body;
 });
 
