@@ -40,8 +40,13 @@ startup, and the orders service creates its Elasticsearch index from
 if it is missing. Each layer waits for the one below it to report healthy, so the first page
 load already has data behind it.
 
-The first build pulls SQL Server, Elasticsearch and the .NET SDK image - roughly 4 GB, a few
-minutes. Give Docker at least 4 GB of memory; SQL Server alone wants 2 GB.
+The first build is heavy: about 6.8 GB of images on disk once everything is unpacked, a
+smaller compressed download, and a few minutes. Nearly three quarters of that is SQL Server
+(2.3 GB) and Elasticsearch (2.6 GB), both of which the assignment asked for and neither of
+which publishes a slim image. Of the rest, the 1.25 GB .NET SDK image is build-time only and
+never runs. It is all cached after the first time.
+
+Give Docker at least 4 GB of memory; SQL Server alone wants 2 GB.
 
 | Reachable from the host | URL |
 | --- | --- |
