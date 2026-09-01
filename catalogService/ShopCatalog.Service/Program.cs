@@ -9,6 +9,8 @@ builder.Services.AddControllers();
 builder.Services.AddDbContext<CatalogDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Catalog")));
 
+// Only relevant when this service is run standalone; in the full stack the BFF calls it
+// server-side and no browser ever reaches it directly.
 builder.Services.AddCors(options => options.AddPolicy(ClientCorsPolicy, policy => policy
     .WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? [])
     .AllowAnyHeader()

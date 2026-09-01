@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import { es, ORDERS_INDEX } from '../es/client';
-import { createOrderSchema, toFieldErrors, type OrderItem } from '../schemas/order';
+import { createOrderSchema, toFieldErrors } from '../schemas/order';
 
 export const ordersRouter = Router();
 
@@ -45,5 +45,3 @@ ordersRouter.get('/:orderId', async (req, res) => {
 
   res.json(found._source);
 });
-
-export type { OrderItem };

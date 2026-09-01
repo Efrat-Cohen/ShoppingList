@@ -1,3 +1,5 @@
+import type { OrderItem } from './schemas/order';
+
 export type Category = {
   id: number;
   name: string;
@@ -14,15 +16,6 @@ export type Customer = {
   fullName: string;
   address: string;
   email: string;
-};
-
-export type OrderItem = {
-  productId: number;
-  productName: string;
-  categoryId: number;
-  categoryName: string;
-  unit: string;
-  quantity: number;
 };
 
 export type Order = {

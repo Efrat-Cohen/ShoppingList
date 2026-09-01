@@ -29,6 +29,8 @@ export const createOrderSchema = z.object({
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 
+export type OrderItem = z.infer<typeof itemSchema>;
+
 export function toFieldErrors(error: z.ZodError) {
   return error.issues.map((issue) => ({
     field: issue.path.join('.'),

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../app/hooks';
 import { AppHeader } from '../components/AppHeader';
@@ -42,6 +42,16 @@ export function OrderSummaryPage() {
 
   const [customer, setCustomer] = useState(EMPTY_CUSTOMER);
   const [localErrors, setLocalErrors] = useState<Partial<Record<keyof Customer, string>>>({});
+
+  // Once the order is placed the cart has been spent. Leaving it full would let the browser
+  // back button walk into a second order carrying items that were already sent.
+  const placed = status === 'succeeded';
+
+  useEffect(() => {
+    if (placed) {
+      dispatch(clearCart());
+    }
+  }, [placed, dispatch]);
 
   if (items.length === 0 && status !== 'succeeded') {
     return <Navigate to="/" replace />;

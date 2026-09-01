@@ -1,4 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { addItem } from '../cart/cartSlice';
 import type { CartItem, Customer, FieldError } from '../../types';
 
 const ORDERS_URL = '/api/orders';
@@ -54,6 +55,8 @@ const orderSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // Putting something new in the cart starts a new order, so a previous result is stale.
+      .addCase(addItem, () => initialState)
       .addCase(submitOrder.pending, (state) => {
         state.status = 'submitting';
         state.errors = [];
