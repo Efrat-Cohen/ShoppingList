@@ -92,13 +92,22 @@ docker compose down -v               # also deletes the seeded SQL Server and El
 `docker compose down -v` followed by `docker compose up --build` is how you start over from
 empty databases without removing anything else.
 
-**When you are finished reviewing**, three steps. The first is not enough on its own: compose
-only removes images a service declares, so the base images the build pulled - the 1.25 GB .NET
-SDK image in particular - survive it, as does the build cache.
+**When you are finished reviewing**, this one command removes everything this project put on
+your machine and nothing else:
+
+```bash
+docker compose down -v --rmi all --remove-orphans && \
+  docker image rm mcr.microsoft.com/dotnet/sdk:10.0 mcr.microsoft.com/dotnet/aspnet:10.0 node:24-alpine nginx:alpine; \
+  docker builder prune -f
+```
+
+It is three steps chained, and each one is worth knowing separately. The first is not enough
+on its own: compose only removes images a service declares, so the base images the build
+pulled - the 1.25 GB .NET SDK image in particular - survive it, as does the build cache.
 
 ```bash
 # 1. containers, network, seeded data, and the six images compose knows about
-docker compose down -v --rmi all
+docker compose down -v --rmi all --remove-orphans
 
 # 2. the base images the build pulled - about 1.9 GB that step 1 leaves behind
 docker image rm mcr.microsoft.com/dotnet/sdk:10.0 mcr.microsoft.com/dotnet/aspnet:10.0 \
@@ -107,6 +116,10 @@ docker image rm mcr.microsoft.com/dotnet/sdk:10.0 mcr.microsoft.com/dotnet/aspne
 # 3. the layer cache the build produced
 docker builder prune -f
 ```
+
+Everything above is scoped to this project. Do not reach for `docker rm -f $(docker ps -aq)`
+or `docker system prune -a` to tidy up after it - those remove every container and image on
+the machine, including ones that have nothing to do with this repository.
 
 Step 2 is safe to run as written: Docker refuses to delete an image that another image or
 container still depends on, so if something else on your machine uses `node:24-alpine`, it
