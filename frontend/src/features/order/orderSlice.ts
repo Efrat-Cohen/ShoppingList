@@ -20,7 +20,14 @@ export const submitOrder = createAsyncThunk<
   { orderId: string },
   { customer: Customer; items: CartItem[] },
   { rejectValue: FieldError[] }
->('order/submit', async (payload, { rejectWithValue }) => {
+>('order/submit', async ({ customer, items }, { rejectWithValue }) => {
+  // The cart carries names and units for the screen. The order only has to say which
+  // product, from which category, and how much - the BFF resolves the rest from the catalog.
+  const payload = {
+    customer,
+    items: items.map(({ productId, categoryId, quantity }) => ({ productId, categoryId, quantity })),
+  };
+
   let response: Response;
 
   try {

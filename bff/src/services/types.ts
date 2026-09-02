@@ -1,5 +1,4 @@
-import type { Category, Order, Product } from '../types';
-import type { CreateOrderInput } from '../schemas/order';
+import type { Category, CreateOrderRequest, Order, Product } from '../types';
 
 // The two ports this service is written against, each mirroring the resources the service
 // behind it exposes. Routers depend on these interfaces; only the composition root in
@@ -10,6 +9,6 @@ export interface CatalogService {
 }
 
 export interface OrdersService {
-  createOrder(order: CreateOrderInput): Promise<{ orderId: string }>;
+  createOrder(order: CreateOrderRequest): Promise<{ orderId: string }>;
   getOrder(orderId: string): Promise<Order | null>;
 }

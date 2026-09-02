@@ -1,8 +1,9 @@
 import { Router } from 'express';
-import { createOrderSchema, toFieldErrors } from '../schemas/order';
-import type { OrdersService } from '../services/types';
+import { createOrderSchema, toFieldErrors, type OrderItemInput } from '../schemas/order';
+import type { CatalogService, OrdersService } from '../services/types';
+import type { FieldError, OrderItem } from '../types';
 
-export function createOrdersRouter(orders: OrdersService): Router {
+export function createOrdersRouter(catalog: CatalogService, orders: OrdersService): Router {
   const router = Router();
 
   router.post('/', async (req, res) => {
@@ -13,7 +14,17 @@ export function createOrdersRouter(orders: OrdersService): Router {
       return;
     }
 
-    res.status(201).json(await orders.createOrder(parsed.data));
+    const resolved = await resolveItems(catalog, parsed.data.items);
+
+    if ('errors' in resolved) {
+      res.status(400).json({ errors: resolved.errors });
+      return;
+    }
+
+    res.status(201).json(await orders.createOrder({
+      customer: parsed.data.customer,
+      items: resolved.items,
+    }));
   });
 
   router.get('/:orderId', async (req, res) => {
@@ -28,4 +39,44 @@ export function createOrdersRouter(orders: OrdersService): Router {
   });
 
   return router;
+}
+
+// The client sends ids and a quantity; the name, unit and category name come from the
+// catalog. A line naming a product that does not exist, or one that sits in a different
+// category than the client thinks, is rejected rather than stored as the client described it.
+async function resolveItems(
+  catalog: CatalogService,
+  items: OrderItemInput[],
+): Promise<{ items: OrderItem[] } | { errors: FieldError[] }> {
+  const [categories, products] = await Promise.all([
+    catalog.getCategories(),
+    catalog.getProducts(),
+  ]);
+
+  const categoriesById = new Map(categories.map((category) => [category.id, category]));
+  const productsById = new Map(products.map((product) => [product.id, product]));
+
+  const resolved: OrderItem[] = [];
+  const errors: FieldError[] = [];
+
+  items.forEach((item, index) => {
+    const product = productsById.get(item.productId);
+    const category = product && categoriesById.get(product.categoryId);
+
+    if (!product || !category || product.categoryId !== item.categoryId) {
+      errors.push({ field: `items.${index}.productId`, code: 'unknown_product' });
+      return;
+    }
+
+    resolved.push({
+      productId: product.id,
+      productName: product.name,
+      categoryId: category.id,
+      categoryName: category.name,
+      unit: product.unit,
+      quantity: item.quantity,
+    });
+  });
+
+  return errors.length > 0 ? { errors } : { items: resolved };
 }

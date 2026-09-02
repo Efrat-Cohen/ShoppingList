@@ -25,7 +25,7 @@ export function createApp({ catalog, orders, allowedOrigins }: Dependencies) {
   });
 
   app.use('/api/catalog', createCatalogRouter(catalog));
-  app.use('/api/orders', createOrdersRouter(orders));
+  app.use('/api/orders', createOrdersRouter(catalog, orders));
 
   app.use(handleErrors);
 

@@ -1,13 +1,11 @@
 import { z } from 'zod';
 
-// The cart is built from the catalog the client already loaded, so an item arrives complete.
-// This is the boundary check, not a lookup: the orders service validates again on its side.
+// A line is three ids and a number. Everything else about a product - its name, its unit,
+// which category it belongs to - is looked up from the catalog on this side, so the client
+// cannot name a product something the catalog does not call it.
 const itemSchema = z.object({
   productId: z.int({ error: 'invalid_item' }).positive({ error: 'invalid_item' }),
-  productName: z.string({ error: 'invalid_item' }).min(1, { error: 'invalid_item' }),
   categoryId: z.int({ error: 'invalid_item' }).positive({ error: 'invalid_item' }),
-  categoryName: z.string({ error: 'invalid_item' }).min(1, { error: 'invalid_item' }),
-  unit: z.string({ error: 'invalid_item' }).min(1, { error: 'invalid_item' }),
   quantity: z.int({ error: 'invalid_quantity' }).positive({ error: 'invalid_quantity' }).max(99, { error: 'invalid_quantity' }),
 });
 
@@ -29,7 +27,7 @@ export const createOrderSchema = z.object({
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 
-export type OrderItem = z.infer<typeof itemSchema>;
+export type OrderItemInput = z.infer<typeof itemSchema>;
 
 export function toFieldErrors(error: z.ZodError) {
   return error.issues.map((issue) => ({
