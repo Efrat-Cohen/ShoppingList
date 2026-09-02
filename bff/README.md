@@ -59,6 +59,25 @@ npm install
 CATALOG_SERVICE_URL=http://localhost:5080 ORDERS_SERVICE_URL=http://localhost:4000 npm run dev
 ```
 
+## Tests
+
+```bash
+npm test
+```
+
+Node's own test runner, run through `tsx` - no test framework, no assertion library, no
+new dependency. Eight tests over the two routes: what `GET /api/catalog` answers with, that
+a failure behind this service comes back as `503`, that an order line is stored as the
+catalog describes it rather than as the client sent it, and the three rejections
+(`unknown_product`, `duplicate_product`, `invalid_email`).
+
+They are the payoff of the injection above. [`src/testing/support.ts`](src/testing/support.ts)
+holds a fake for each port and starts the app on a port the OS picks; nothing is mocked, no
+service is running, and a test asserts on what the app actually handed to `OrdersService`
+rather than on a call log.
+
+`tsconfig.build.json` keeps the tests and their support out of `dist`.
+
 ## Endpoints
 
 | | |

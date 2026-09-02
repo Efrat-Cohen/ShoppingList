@@ -144,6 +144,13 @@ docker volume ls --filter name=shopping-list --filter name=catalog-service --fil
 docker images | grep -E 'shopping-list|mssql|elasticsearch|dotnet'
 ```
 
+## Tests
+
+The BFF has them - `cd bff && npm test`. Node's built-in runner, eight tests driving the app
+against fakes of its two ports. It is the layer with logic worth pinning down: composing the
+catalog, resolving an order line against it, and the rejections. The other three projects are
+not covered.
+
 ## The two screens
 
 **Screen one - shopping list.** The whole catalog arrives in a single request when the page
