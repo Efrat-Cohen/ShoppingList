@@ -32,7 +32,6 @@ export const strings = {
   cart: {
     title: 'הסל שלי',
     empty: 'הסל ריק. בחרו מוצר כדי להתחיל.',
-    remove: 'הסרה',
     continue: 'המשך הזמנה',
     orderItems: 'המוצרים בהזמנה',
     countOne: 'מוצר אחד',
@@ -67,6 +66,7 @@ export const strings = {
     duplicate_product: 'אותו מוצר הופיע פעמיים בסל.',
     invalid_request: 'הבקשה אינה תקינה.',
     invalid_item: 'אחד המוצרים בסל אינו תקין.',
+    unknown_product: 'אחד המוצרים בסל כבר אינו בקטלוג. חזרו ובחרו מחדש.',
     invalid_quantity: 'הכמות אינה תקינה.',
     not_found: 'ההזמנה לא נמצאה.',
     catalog_unavailable: 'הקטלוג אינו זמין כרגע. נסו שוב.',

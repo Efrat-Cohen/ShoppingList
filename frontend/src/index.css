@@ -395,22 +395,6 @@ select.control {
   white-space: nowrap;
 }
 
-.line-remove {
-  grid-column: 1 / -1;
-  justify-self: start;
-  border: 0;
-  background: none;
-  padding: 0;
-  font-size: 13px;
-  color: var(--muted);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.line-remove:hover {
-  color: var(--danger);
-}
-
 .slip-empty {
   margin: 0;
   padding: 24px 4px;

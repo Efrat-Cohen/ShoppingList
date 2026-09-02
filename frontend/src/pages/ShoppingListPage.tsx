@@ -4,7 +4,7 @@ import { useAppDispatch, useAppSelector } from '../app/hooks';
 import { AppHeader } from '../components/AppHeader';
 import { CartSlip } from '../components/CartSlip';
 import { QuantityInput } from '../components/QuantityInput';
-import { addItem, removeItem } from '../features/cart/cartSlice';
+import { addItem } from '../features/cart/cartSlice';
 import { fetchCatalog } from '../features/catalog/catalogSlice';
 import { strings } from '../i18n/strings';
 
@@ -19,7 +19,7 @@ export function ShoppingListPage() {
   const [productId, setProductId] = useState('');
   const [quantity, setQuantity] = useState(1);
 
-  // The whole catalog - categories and their products - arrives in a single request
+  // The whole catalog - both lists, categories and products - arrives in a single request
   // when the screen first mounts.
   useEffect(() => {
     if (status === 'idle') {
@@ -28,7 +28,7 @@ export function ShoppingListPage() {
   }, [status, dispatch]);
 
   const selectedCategory = categories.find((category) => String(category.id) === categoryId);
-  const categoryProducts = products.filter((product) => String(product.categoryId) === categoryId);
+  const categoryProducts = products.filter((product) => product.categoryId === selectedCategory?.id);
   const selectedProduct = categoryProducts.find((product) => String(product.id) === productId);
 
   function handleCategoryChange(nextCategoryId: string) {
@@ -132,11 +132,7 @@ export function ShoppingListPage() {
           )}
         </main>
 
-        <CartSlip
-          title={strings.cart.title}
-          items={items}
-          onRemove={(id) => dispatch(removeItem(id))}
-        >
+        <CartSlip title={strings.cart.title} items={items}>
           <button
             type="button"
             className="btn btn-primary btn-block"
