@@ -66,7 +66,7 @@ docker compose exec bff node -e "fetch('http://catalog-service:8080/api/products
 
 ```bash
 docker compose ps                          # six services, the five with checks say healthy
-curl http://localhost:3000/api/catalog     # 6 categories, 33 products
+curl http://localhost:3000/api/catalog     # two lists: 6 categories, 33 products
 curl http://localhost:9200/orders/_search  # orders you have placed
 ```
 
@@ -147,8 +147,8 @@ docker images | grep -E 'shopping-list|mssql|elasticsearch|dotnet'
 ## The two screens
 
 **Screen one - shopping list.** The whole catalog arrives in a single request when the page
-mounts. Two dropdowns: choosing a category filters the product
-dropdown to that category's products. Quantity starts at 1. "הוסף מוצר לסל" puts the product
+mounts - both lists, categories and products. Two dropdowns: choosing a category filters the
+product dropdown to that category's products. Quantity starts at 1. "הוסף מוצר לסל" puts the product
 in the cart, which is shown alongside; adding a product that is already there tops up its
 quantity rather than adding a second line.
 
@@ -159,20 +159,22 @@ and answers with an order id.
 
 ## A few decisions worth explaining
 
-**Categories and products are two resources.** The catalog service exposes
+**Categories and products stay two lists, all the way through.** The catalog service exposes
 `GET /api/categories` and `GET /api/products`, and products carry a `categoryId`. Nesting the
 products inside a category would bake one screen's layout into the service's contract, and
 would mean you cannot ask for the category list without downloading the whole catalog. The
-BFF fetches both in parallel and hands the screen one payload, so a page load is still a
-single request. The store keeps the two lists flat and filters.
+BFF fetches both in parallel and answers with `{ categories, products }`, so a page load is
+still a single request from the browser while both lists keep describing themselves. The
+store stays normalised too: the product dropdown is
+`products.filter(p => p.categoryId === selected)`.
 
 **The BFF is the single entry point.** The frontend has one backend to know about and one
 error vocabulary, and does not need to know that categories come from a .NET service and
-orders go to a Node one. It deliberately does not re-fetch the catalog when an order is
-submitted: the client loaded it on page load and picked each product out of a category, so a
-cart line already carries the product name, unit and category. What the BFF does at that
-boundary is validate, reject a product that appears twice, and normalise failures from either
-service.
+orders go to a Node one. An order line it receives is `{ productId, categoryId, quantity }`;
+the BFF looks each one up in the catalog and fills in the product name, unit and category
+name itself, so what gets stored is what the catalog says rather than what a client claimed.
+It also validates the customer details, rejects a product that appears twice, and normalises
+failures from either service.
 
 **The BFF's dependencies are injected.** `bff/src/services/types.ts` declares the two ports
 it is written against. `bff/src/index.ts` is the only file that picks the HTTP

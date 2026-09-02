@@ -1,8 +1,3 @@
-export type Category = {
-  id: number;
-  name: string;
-};
-
 export type Product = {
   id: number;
   name: string;
@@ -10,7 +5,13 @@ export type Product = {
   categoryId: number;
 };
 
-// One page load, one request: the BFF puts the two catalog resources together.
+export type Category = {
+  id: number;
+  name: string;
+};
+
+// One page load, one request: the BFF fetches both catalog resources in parallel and answers
+// with the pair. The store keeps them flat and filters products by categoryId.
 export type Catalog = {
   categories: Category[];
   products: Product[];

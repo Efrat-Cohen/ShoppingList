@@ -10,17 +10,25 @@ error vocabulary - it does not need to know that categories come from a .NET ser
 orders go to a Node one, or that either might move.
 
 **It composes the catalog.** The catalog service exposes categories and products as two
-resources, each describing itself. This service fetches both in parallel and returns
-`{ categories, products }`, so one page load is still one request from the browser. Shaping
-data for a screen is exactly what this layer is for - a service should not have a screen's
-layout baked into its contract.
+resources, each describing itself. This service fetches both in parallel and answers with the
+pair, so one page load is still one request from the browser. Both lists stay flat - a product
+carries its `categoryId` and the screen filters by it - which keeps one screen's layout out of
+the contract and lets the store hold a normalised catalog.
 
-It does not re-fetch the catalog to build an order. The client loaded the whole catalog on
-page load and picked each product out of a category, so a cart line already carries the
-product name, unit and category. Asking the catalog service again on every submit would be a
-round trip for data the caller already holds. What this service does do at that boundary is
-validate the shape, reject a product that appears on two lines, and normalise failures from
-either service into the same `{ field, code }` envelope.
+```json
+{
+  "categories": [{ "id": 1, "name": "פירות וירקות" }],
+  "products": [{ "id": 3, "name": "בננות", "unit": "ק\"ג", "categoryId": 1 }]
+}
+```
+
+**It resolves an order.** An order line the browser sends is `{ productId, categoryId,
+quantity }` - nothing else. This service looks each line up in the catalog and fills in the
+product name, its unit and the category name before handing the order on, so a stored order
+says what the catalog says and not what a client claimed. A line whose product is not in the
+catalog, or sits in a different category than the client thinks, comes back as `400` with
+`unknown_product`. It also rejects a product that appears on two lines and normalises failures
+from either service into the same `{ field, code }` envelope.
 
 ## Dependency injection
 
@@ -55,8 +63,8 @@ CATALOG_SERVICE_URL=http://localhost:5080 ORDERS_SERVICE_URL=http://localhost:40
 
 | | |
 | --- | --- |
-| `GET /api/catalog` | `{ categories, products }` - both catalog resources, fetched in parallel |
-| `POST /api/orders` | Resolves products, then stores. `201` with `{ orderId }` |
+| `GET /api/catalog` | `{ categories, products }` - both resources fetched in parallel, returned in one response |
+| `POST /api/orders` | Takes `{ productId, categoryId, quantity }` per line, resolves each against the catalog, then stores. `201` with `{ orderId }` |
 | `GET /api/orders/:orderId` | Reads one back |
 | `GET /health` | Compose health check |
 
