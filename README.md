@@ -82,21 +82,37 @@ curl http://localhost:9200/orders/_search  # orders you have placed
 
 ### Removing it
 
-Three levels, each including the one above it:
+While you are still using it:
 
 ```bash
 docker compose down                  # containers and network; keeps the databases and images
 docker compose down -v               # also deletes the seeded SQL Server and Elasticsearch data
-docker compose down -v --rmi all     # also deletes the images, including the ones that were pulled
 ```
 
-The last one leaves nothing behind - use it when you are finished reviewing. Docker will not
-delete an image another container is still using, so shared bases like `node:24-alpine` stay
-if something else on your machine needs them. Use `--rmi local` instead of `--rmi all` to drop
-only the four images built from this repository and keep the pulled ones.
+`docker compose down -v` followed by `docker compose up --build` is how you start over from
+empty databases without removing anything else.
 
-Running `docker compose down -v` and then `docker compose up --build` is also how you start
-over from empty databases without removing anything else.
+**When you are finished reviewing**, three steps. The first is not enough on its own: compose
+only removes images a service declares, so the base images the build pulled - the 1.25 GB .NET
+SDK image in particular - survive it, as does the build cache.
+
+```bash
+# 1. containers, network, seeded data, and the six images compose knows about
+docker compose down -v --rmi all
+
+# 2. the base images the build pulled - about 1.9 GB that step 1 leaves behind
+docker image rm mcr.microsoft.com/dotnet/sdk:10.0 mcr.microsoft.com/dotnet/aspnet:10.0 \
+                node:24-alpine nginx:alpine
+
+# 3. the layer cache the build produced
+docker builder prune -f
+```
+
+Step 2 is safe to run as written: Docker refuses to delete an image that another image or
+container still depends on, so if something else on your machine uses `node:24-alpine`, it
+stays. Step 3 clears the build cache for every project on the machine, not only this one -
+nothing breaks, your next build elsewhere just has less to reuse. Skip it if you would rather
+keep the cache.
 
 If you also ran a service on its own from its folder, that is a separate compose project with
 its own container and volume, and the command above does not touch it:
@@ -106,11 +122,13 @@ docker compose -f catalogService/docker-compose.yml down -v --rmi local
 docker compose -f ordersService/docker-compose.yml down -v --rmi local
 ```
 
-To confirm the machine is clean, both of these should print nothing but a header:
+To confirm the machine is clean - the first two should print nothing but a header, the third
+nothing at all:
 
 ```bash
 docker ps -a   --filter name=shopping-list --filter name=catalog-service --filter name=orders-service
 docker volume ls --filter name=shopping-list --filter name=catalog-service --filter name=orders-service
+docker images | grep -E 'shopping-list|mssql|elasticsearch|dotnet'
 ```
 
 ## The two screens
