@@ -80,8 +80,38 @@ curl http://localhost:9200/orders/_search  # orders you have placed
 | The page loads but the catalog does not | `docker compose logs catalog-service bff`. The catalog service is most likely still applying migrations. |
 | The first build looks stuck | It is pulling around 4 GB of images. `docker compose logs -f` shows progress. |
 
-To start over from empty databases, take the stack down with the volumes removed
-(`docker compose down` with the `-v` flag) and bring it up again.
+### Removing it
+
+Three levels, each including the one above it:
+
+```bash
+docker compose down                  # containers and network; keeps the databases and images
+docker compose down -v               # also deletes the seeded SQL Server and Elasticsearch data
+docker compose down -v --rmi all     # also deletes the images, including the ones that were pulled
+```
+
+The last one leaves nothing behind - use it when you are finished reviewing. Docker will not
+delete an image another container is still using, so shared bases like `node:24-alpine` stay
+if something else on your machine needs them. Use `--rmi local` instead of `--rmi all` to drop
+only the four images built from this repository and keep the pulled ones.
+
+Running `docker compose down -v` and then `docker compose up --build` is also how you start
+over from empty databases without removing anything else.
+
+If you also ran a service on its own from its folder, that is a separate compose project with
+its own container and volume, and the command above does not touch it:
+
+```bash
+docker compose -f catalogService/docker-compose.yml down -v --rmi local
+docker compose -f ordersService/docker-compose.yml down -v --rmi local
+```
+
+To confirm the machine is clean, both of these should print nothing but a header:
+
+```bash
+docker ps -a   --filter name=shopping-list --filter name=catalog-service --filter name=orders-service
+docker volume ls --filter name=shopping-list --filter name=catalog-service --filter name=orders-service
+```
 
 ## The two screens
 
