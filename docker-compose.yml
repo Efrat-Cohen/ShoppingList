@@ -13,7 +13,7 @@ services:
     image: mcr.microsoft.com/mssql/server:2022-latest
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "Str0ng.Passw0rd"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:-Str0ng.Passw0rd}"
       MSSQL_PID: Developer
     volumes:
       - sqlserver-data:/var/opt/mssql
@@ -49,7 +49,7 @@ services:
   catalog-service:
     build: ./catalogService
     environment:
-      ConnectionStrings__Catalog: "Server=sqlserver,1433;Database=ShopCatalog;User Id=sa;Password=Str0ng.Passw0rd;TrustServerCertificate=True;Encrypt=False"
+      ConnectionStrings__Catalog: "Server=sqlserver,1433;Database=ShopCatalog;User Id=sa;Password=${MSSQL_SA_PASSWORD:-Str0ng.Passw0rd};TrustServerCertificate=True;Encrypt=False"
     depends_on:
       sqlserver:
         condition: service_healthy
@@ -108,7 +108,7 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "3000:80"
+      - "3000:8080"
     depends_on:
       bff:
         condition: service_healthy

@@ -17,6 +17,10 @@ RUN apt-get update \
 
 COPY --from=build /app .
 
+# The aspnet images ship a non-root user for exactly this; 8080 is unprivileged, so nothing
+# in here needs root once the image is built.
+USER $APP_UID
+
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 
