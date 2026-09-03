@@ -96,14 +96,16 @@ it. Docker refuses to delete one something else still uses, so it is safe as wri
 ## Tests
 
 ```bash
-cd bff && npm test          # 9
-cd frontend && npm test     # 9
+cd bff && npm test           # 9
+cd frontend && npm test      # 11
+cd ordersService && npm test # 10
 ```
 
-Node's built-in test runner in both - no test framework and no assertion library anywhere in
-the repository. The BFF tests drive the app against fakes of its two ports; the frontend tests
-cover the two reducers that hold rules rather than plumbing. `catalogService` and
-`ordersService` are thin over their databases and are not covered.
+Node's built-in test runner in all three - no test framework and no assertion library anywhere
+in the repository. The rule is the same in each: cover what holds rules, not what moves data.
+The BFF tests drive the app against fakes of its two ports; the frontend tests cover the two
+reducers; the ordersService tests cover the zod schema, which is the only place an order is
+judged before it is stored. `catalogService` is thin over its database and is not covered.
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs lint, typecheck and tests on every
 push.
 

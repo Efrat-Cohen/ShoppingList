@@ -42,6 +42,17 @@ back as `400` with codes, not sentences -
 `{ "errors": [{ "field": "customer.email", "code": "invalid_email" }] }` - because the UI is
 Hebrew and all of its copy lives in the client.
 
+## Tests
+
+```bash
+npm test
+```
+
+Ten, on Node's own test runner through `tsx`, over
+[`src/schemas/order.ts`](src/schemas/order.ts) - the quantity cap, the one-line-per-product
+rule, and the `field`/`code` pairs a rejection comes back with, which the client looks up in
+its strings file. They parse and assert; nothing here needs Elasticsearch running.
+
 ## The mapping
 
 `items` is a **nested** field so a query can match one item's fields together rather than

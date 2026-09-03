@@ -27,10 +27,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
-
-      # ordersService has no tests - see the Tests section of the root README.
       - run: npm test
-        if: matrix.package != 'ordersService'
 
   dotnet:
     name: catalogService
