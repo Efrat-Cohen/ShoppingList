@@ -23,16 +23,25 @@ catalog so a stored order says what the catalog says rather than what a client c
 Each service folder has its own `docker-compose.yml` too, so it can be run and called on its
 own - they are written to stand alone.
 
-## Running it
+## Installing it
 
-Docker is the only prerequisite. Give it at least 4 GB; SQL Server alone wants 2.
+Docker is the only prerequisite - [Docker Desktop](https://docs.docker.com/get-started/get-docker/)
+on Windows or macOS, Docker Engine with the Compose plugin on Linux. Give it at least 4 GB;
+SQL Server alone wants 2. Ports 3000, 4100 and 9200 have to be free on the host.
 
 ```bash
+git clone https://github.com/Efrat-Cohen/ShoppingList.git
+cd ShoppingList
 docker compose up --build
 ```
 
-Then open **http://localhost:3000**. The first build pulls around 4 GB and takes a few
-minutes; after that it is cached.
+Nothing else has to be installed: Node, the .NET SDK, SQL Server and Elasticsearch all live
+inside the containers.
+
+## Running it
+
+Once the stack is up, open **http://localhost:3000**. The first build pulls around 4 GB and
+takes a few minutes; after that it is cached. Later runs need only `docker compose up`.
 
 Migrations, seed data and the Elasticsearch index are applied on startup, and each layer waits
 for the one below it to report healthy, so the first page load already has data behind it.
@@ -45,6 +54,32 @@ for the one below it to report healthy, so the first page load already has data 
 
 `catalogService`, `ordersService` and SQL Server are on the internal network only - the BFF is
 the entry point.
+
+### From source, without Docker
+
+Only worth it while working on the code. It needs Node 24 and the .NET 10 SDK, plus the two
+databases - the per-service compose files publish them to the host, which the root one does
+not:
+
+```bash
+docker compose -f catalogService/docker-compose.yml up sqlserver       # localhost:1433
+docker compose -f ordersService/docker-compose.yml up elasticsearch    # localhost:9200
+```
+
+Then one terminal each, in this order:
+
+```bash
+cd catalogService/ShopCatalog.Service && dotnet run   # http://localhost:5080
+cd ordersService && npm install && npm run dev        # http://localhost:4000
+cd bff           && npm install && npm run dev        # http://localhost:4100
+cd frontend      && npm install && npm run dev        # http://localhost:5173
+```
+
+Those are the ports each service defaults to when its environment variables are unset, so the
+four find each other with no configuration, and Vite proxies `/api` to the BFF exactly as
+nginx does in Docker. The one thing not in the file is the SQL Server password:
+`appsettings.Development.json` deliberately leaves it out, so pass it in - `dotnet user-secrets`,
+or `ConnectionStrings__Catalog` in the environment with `Password=Str0ng.Passw0rd` appended.
 
 To remove everything this project put on the machine and nothing else:
 
