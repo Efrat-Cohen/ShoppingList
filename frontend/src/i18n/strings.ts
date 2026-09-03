@@ -32,6 +32,7 @@ export const strings = {
   cart: {
     title: 'הסל שלי',
     empty: 'הסל ריק. בחרו מוצר כדי להתחיל.',
+    remove: 'הסרה',
     continue: 'המשך הזמנה',
     orderItems: 'המוצרים בהזמנה',
     countOne: 'מוצר אחד',

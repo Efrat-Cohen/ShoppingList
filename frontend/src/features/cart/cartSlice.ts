@@ -28,12 +28,19 @@ const cartSlice = createSlice({
       state.items.push(action.payload);
     },
 
+    // The only way back out of the cart for a single line. Without it a product the
+    // catalog has since dropped - which the BFF rejects with unknown_product - leaves the
+    // cart in a state no amount of retrying can submit.
+    removeItem(state, action: PayloadAction<number>) {
+      state.items = state.items.filter((item) => item.productId !== action.payload);
+    },
+
     clearCart(state) {
       state.items = [];
     },
   },
 });
 
-export const { addItem, clearCart } = cartSlice.actions;
+export const { addItem, removeItem, clearCart } = cartSlice.actions;
 
 export default cartSlice.reducer;

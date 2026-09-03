@@ -4,7 +4,7 @@ import { useAppDispatch, useAppSelector } from '../app/hooks';
 import { AppHeader } from '../components/AppHeader';
 import { CartSlip } from '../components/CartSlip';
 import { QuantityInput } from '../components/QuantityInput';
-import { addItem } from '../features/cart/cartSlice';
+import { addItem, removeItem } from '../features/cart/cartSlice';
 import { fetchCatalog } from '../features/catalog/catalogSlice';
 import { strings } from '../i18n/strings';
 
@@ -132,7 +132,11 @@ export function ShoppingListPage() {
           )}
         </main>
 
-        <CartSlip title={strings.cart.title} items={items}>
+        <CartSlip
+          title={strings.cart.title}
+          items={items}
+          onRemove={(id) => dispatch(removeItem(id))}
+        >
           <button
             type="button"
             className="btn btn-primary btn-block"

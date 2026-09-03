@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import reducer, { MAX_QUANTITY, addItem, clearCart } from './cartSlice';
+import reducer, { MAX_QUANTITY, addItem, clearCart, removeItem } from './cartSlice';
 import type { CartItem } from '../../types';
 
 const bananas: CartItem = {
@@ -48,6 +48,21 @@ describe('cartSlice', () => {
     const state = reducer(first, addItem({ ...bananas, quantity: 10 }));
 
     assert.equal(state.items[0].quantity, MAX_QUANTITY);
+  });
+
+  it('takes a single product out and leaves the rest', () => {
+    const first = reducer(undefined, addItem(bananas));
+    const both = reducer(first, addItem(milk));
+    const state = reducer(both, removeItem(bananas.productId));
+
+    assert.deepEqual(state.items, [milk]);
+  });
+
+  it('ignores a product that is not in the cart', () => {
+    const first = reducer(undefined, addItem(bananas));
+    const state = reducer(first, removeItem(milk.productId));
+
+    assert.deepEqual(state.items, [bananas]);
   });
 
   it('empties the cart', () => {

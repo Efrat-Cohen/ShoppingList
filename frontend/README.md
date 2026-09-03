@@ -20,7 +20,7 @@ src/
 ├─ app/               store and typed hooks
 ├─ features/
 │  ├─ catalog/        fetches the catalog once, on mount
-│  ├─ cart/           add, clear
+│  ├─ cart/           add, remove, clear
 │  └─ order/          submits the order
 ├─ components/        header, cart slip, quantity input, confirmation
 └─ pages/             ShoppingListPage, OrderSummaryPage

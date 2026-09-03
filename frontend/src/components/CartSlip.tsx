@@ -5,10 +5,11 @@ import type { CartItem } from '../types';
 type Props = {
   title: string;
   items: CartItem[];
+  onRemove?: (productId: number) => void;
   children?: ReactNode;
 };
 
-export function CartSlip({ title, items, children }: Props) {
+export function CartSlip({ title, items, onRemove, children }: Props) {
   const count = items.length;
 
   return (
@@ -30,6 +31,16 @@ export function CartSlip({ title, items, children }: Props) {
               <span className="line-qty">
                 {item.quantity} {item.unit}
               </span>
+              {onRemove && (
+                <button
+                  type="button"
+                  className="line-remove"
+                  onClick={() => onRemove(item.productId)}
+                  aria-label={`${strings.cart.remove} ${item.productName}`}
+                >
+                  {strings.cart.remove}
+                </button>
+              )}
             </li>
           ))}
         </ul>
