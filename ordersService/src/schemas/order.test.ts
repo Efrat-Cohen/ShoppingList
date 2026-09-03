@@ -21,8 +21,12 @@ const bananas = {
 // are the ones the client receives and looks up in its strings file.
 function errorsFor(body: unknown) {
   const parsed = createOrderSchema.safeParse(body);
-  assert.equal(parsed.success, false, 'expected the order to be rejected');
-  return toFieldErrors(parsed.error!);
+
+  if (parsed.success) {
+    assert.fail('expected the order to be rejected');
+  }
+
+  return toFieldErrors(parsed.error);
 }
 
 test('accepts an order the client could plausibly send', () => {
