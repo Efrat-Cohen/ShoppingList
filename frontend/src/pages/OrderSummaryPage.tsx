@@ -64,7 +64,6 @@ export function OrderSummaryPage() {
         <OrderConfirmation
           orderId={orderId}
           onRestart={() => {
-            dispatch(clearCart());
             dispatch(resetOrder());
             navigate('/');
           }}
