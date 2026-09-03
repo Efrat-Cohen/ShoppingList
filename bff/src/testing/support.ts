@@ -46,7 +46,6 @@ export function fakeOrders(overrides: Partial<OrdersService> = {}): FakeOrders {
       created.push(order);
       return { orderId: 'order-1' };
     },
-    getOrder: async () => null,
     ...overrides,
   };
 }

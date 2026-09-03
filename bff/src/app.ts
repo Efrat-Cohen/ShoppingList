@@ -27,6 +27,12 @@ export function createApp({ catalog, orders, allowedOrigins }: Dependencies) {
   app.use('/api/catalog', createCatalogRouter(catalog));
   app.use('/api/orders', createOrdersRouter(catalog, orders));
 
+  // A path this service does not serve still answers in its own vocabulary rather than in
+  // Express's default HTML page.
+  app.use('/api', (_req, res) => {
+    res.status(404).json({ errors: [{ field: '', code: 'not_found' }] });
+  });
+
   app.use(handleErrors);
 
   return app;

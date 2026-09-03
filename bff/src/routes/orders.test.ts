@@ -74,15 +74,3 @@ test('answers a bad email with the code the client has a message for', async (t)
     errors: [{ field: 'customer.email', code: 'invalid_email' }],
   });
 });
-
-test('reads an unknown order back as 404', async (t) => {
-  const app = await startApp();
-  t.after(app.close);
-
-  const response = await app.request('/api/orders/does-not-exist');
-
-  assert.equal(response.status, 404);
-  assert.deepEqual(await response.json(), {
-    errors: [{ field: 'orderId', code: 'not_found' }],
-  });
-});

@@ -5,8 +5,8 @@ import { createOrderSchema, toFieldErrors } from '../schemas/order';
 
 export const ordersRouter = Router();
 
-// Express 5 forwards rejected promises to the error middleware, so these handlers
-// deliberately do not wrap everything in try/catch.
+// Express 5 forwards rejected promises to the error middleware, so this handler
+// deliberately does not wrap everything in try/catch.
 ordersRouter.post('/', async (req, res) => {
   const parsed = createOrderSchema.safeParse(req.body);
 
@@ -24,7 +24,8 @@ ordersRouter.post('/', async (req, res) => {
     createdAt: new Date().toISOString(),
   };
 
-  // refresh: 'wait_for' keeps the follow-up GET honest without forcing a full index refresh.
+  // refresh: 'wait_for' means the order is searchable by the time we answer 201, without
+  // forcing a full index refresh.
   await es.index({
     index: ORDERS_INDEX,
     id: order.orderId,
@@ -33,15 +34,4 @@ ordersRouter.post('/', async (req, res) => {
   });
 
   res.status(201).json(order);
-});
-
-ordersRouter.get('/:orderId', async (req, res) => {
-  const found = await es.get({ index: ORDERS_INDEX, id: req.params.orderId }, { ignore: [404] });
-
-  if (!found.found) {
-    res.status(404).json({ errors: [{ field: 'orderId', code: 'not_found' }] });
-    return;
-  }
-
-  res.json(found._source);
 });

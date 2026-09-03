@@ -27,16 +27,8 @@ export function createOrdersRouter(catalog: CatalogService, orders: OrdersServic
     }));
   });
 
-  router.get('/:orderId', async (req, res) => {
-    const order = await orders.getOrder(req.params.orderId);
-
-    if (!order) {
-      res.status(404).json({ errors: [{ field: 'orderId', code: 'not_found' }] });
-      return;
-    }
-
-    res.json(order);
-  });
+  // There is deliberately no route for reading an order back. A stored order holds a name,
+  // an address and an email, and nothing in front of this service authenticates anyone.
 
   return router;
 }

@@ -40,13 +40,6 @@ export type CreateOrderRequest = {
   items: OrderItem[];
 };
 
-export type Order = {
-  orderId: string;
-  customer: Customer;
-  items: OrderItem[];
-  createdAt: string;
-};
-
 export type FieldError = {
   field: string;
   code: string;

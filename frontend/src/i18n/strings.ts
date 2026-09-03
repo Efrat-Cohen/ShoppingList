@@ -68,7 +68,7 @@ export const strings = {
     invalid_item: 'אחד המוצרים בסל אינו תקין.',
     unknown_product: 'אחד המוצרים בסל כבר אינו בקטלוג. חזרו ובחרו מחדש.',
     invalid_quantity: 'הכמות אינה תקינה.',
-    not_found: 'ההזמנה לא נמצאה.',
+    not_found: 'הכתובת המבוקשת לא נמצאה.',
     catalog_unavailable: 'הקטלוג אינו זמין כרגע. נסו שוב.',
     orders_unavailable: 'שירות ההזמנות אינו זמין כרגע. נסו שוב.',
     server_error: 'משהו השתבש בשרת. נסו שוב.',
