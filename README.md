@@ -1,12 +1,12 @@
 # Shopping list
 
-A two-screen shopping list: pick products from a catalog, then fill in delivery details and
-send the order. The UI is in Hebrew; everything else - code, comments, docs - is in English.
+Two screens: pick products from a catalog, then fill in delivery details and send the order.
+The UI is in Hebrew; the code is in English.
 
 ```
-browser ──▶ frontend (nginx)
-                └── /api/* ──▶ bff ──┬──▶ catalogService   .NET 10  ──▶ SQL Server
-                                     └──▶ ordersService    Express  ──▶ Elasticsearch
+browser ─▶ frontend (nginx)
+              └── /api/* ─▶ bff ─┬─▶ catalogService  .NET 10  ─▶ SQL Server
+                                 └─▶ ordersService   Express  ─▶ Elasticsearch
 ```
 
 | Folder | What it is | Stack |
@@ -16,84 +16,37 @@ browser ──▶ frontend (nginx)
 | [`catalogService/`](catalogService) | Categories and products | .NET 10, EF Core, SQL Server |
 | [`ordersService/`](ordersService) | Stores submitted orders | Express 5, TypeScript, Elasticsearch |
 
-The two services are not published to the host - the BFF is the single entry point in front
-of them. Each service folder has its own `docker-compose.yml` if you want to run one on its
-own and call it directly.
+The assignment asks for three components; the BFF is a fourth, added on purpose. It gives the
+browser one origin and one error vocabulary, and it resolves every order line against the
+catalog so a stored order says what the catalog says rather than what a client claimed.
+
+Each service folder has its own `docker-compose.yml` too, so it can be run and called on its
+own - they are written to stand alone.
 
 ## Running it
 
-Docker is the only thing you need installed - no .NET SDK, no Node, no SQL Server, no
-Elasticsearch. Docker Desktop on Windows or macOS, or Docker Engine with the Compose plugin
-on Linux.
+Docker is the only prerequisite. Give it at least 4 GB; SQL Server alone wants 2.
 
 ```bash
-git clone <repository-url>
-cd homeTest
 docker compose up --build
 ```
 
-Then open **http://localhost:3000**.
+Then open **http://localhost:3000**. The first build pulls around 4 GB and takes a few
+minutes; after that it is cached.
 
-There is no setup step. The catalog service applies its migrations and seeds the database on
-startup, and the orders service creates its Elasticsearch index from
-[`ordersService/elasticsearch/orders-mapping.json`](ordersService/elasticsearch/orders-mapping.json)
-if it is missing. Each layer waits for the one below it to report healthy, so the first page
-load already has data behind it.
+Migrations, seed data and the Elasticsearch index are applied on startup, and each layer waits
+for the one below it to report healthy, so the first page load already has data behind it.
 
-The first build is heavy: about 6.8 GB of images on disk once everything is unpacked, a
-smaller compressed download, and a few minutes. Nearly three quarters of that is SQL Server
-(2.3 GB) and Elasticsearch (2.6 GB), both of which the assignment asked for and neither of
-which publishes a slim image. Of the rest, the 1.25 GB .NET SDK image is build-time only and
-never runs. It is all cached after the first time.
-
-Give Docker at least 4 GB of memory; SQL Server alone wants 2 GB.
-
-| Reachable from the host | URL |
+| Reachable from the host | |
 | --- | --- |
 | The app | http://localhost:3000 |
 | BFF | http://localhost:4100/api/catalog |
 | Elasticsearch | http://localhost:9200/orders/_search |
 
 `catalogService`, `ordersService` and SQL Server are on the internal network only - the BFF is
-the entry point. To reach one directly, use its own compose file, or go through a container
-that is on the network:
+the entry point.
 
-```bash
-docker compose exec bff node -e "fetch('http://catalog-service:8080/api/products').then(r => r.text()).then(console.log)"
-```
-
-### Checking it worked
-
-```bash
-docker compose ps                          # six services, the five with checks say healthy
-curl http://localhost:3000/api/catalog     # two lists: 6 categories, 33 products
-curl http://localhost:9200/orders/_search  # orders you have placed
-```
-
-### If something goes wrong
-
-| Symptom | Cause and fix |
-| --- | --- |
-| `port is already allocated` | Something else holds 3000, 4100 or 9200. Change the left-hand number of the `ports:` entry in `docker-compose.yml`. |
-| `catalog-service` never turns healthy | SQL Server wants 2 GB to itself. Raise Docker's memory limit to at least 4 GB and bring the stack up again. |
-| `elasticsearch` exits straight away on Linux | `vm.max_map_count` is too low: `sudo sysctl -w vm.max_map_count=262144`. |
-| The page loads but the catalog does not | `docker compose logs catalog-service bff`. The catalog service is most likely still applying migrations. |
-| The first build looks stuck | It is pulling around 4 GB of images. `docker compose logs -f` shows progress. |
-
-### Removing it
-
-While you are still using it:
-
-```bash
-docker compose down                  # containers and network; keeps the databases and images
-docker compose down -v               # also deletes the seeded SQL Server and Elasticsearch data
-```
-
-`docker compose down -v` followed by `docker compose up --build` is how you start over from
-empty databases without removing anything else.
-
-**When you are finished reviewing**, this one command removes everything this project put on
-your machine and nothing else:
+To remove everything this project put on the machine and nothing else:
 
 ```bash
 docker compose down -v --rmi all --remove-orphans && \
@@ -101,110 +54,31 @@ docker compose down -v --rmi all --remove-orphans && \
   docker builder prune -f
 ```
 
-It is three steps chained, and each one is worth knowing separately. The first is not enough
-on its own: compose only removes images a service declares, so the base images the build
-pulled - the 1.25 GB .NET SDK image in particular - survive it, as does the build cache.
-
-```bash
-# 1. containers, network, seeded data, and the six images compose knows about
-docker compose down -v --rmi all --remove-orphans
-
-# 2. the base images the build pulled - about 1.9 GB that step 1 leaves behind
-docker image rm mcr.microsoft.com/dotnet/sdk:10.0 mcr.microsoft.com/dotnet/aspnet:10.0 \
-                node:24-alpine nginx:alpine
-
-# 3. the layer cache the build produced
-docker builder prune -f
-```
-
-Everything above is scoped to this project. Do not reach for `docker rm -f $(docker ps -aq)`
-or `docker system prune -a` to tidy up after it - those remove every container and image on
-the machine, including ones that have nothing to do with this repository.
-
-Step 2 is safe to run as written: Docker refuses to delete an image that another image or
-container still depends on, so if something else on your machine uses `node:24-alpine`, it
-stays. Step 3 clears the build cache for every project on the machine, not only this one -
-nothing breaks, your next build elsewhere just has less to reuse. Skip it if you would rather
-keep the cache.
-
-If you also ran a service on its own from its folder, that is a separate compose project with
-its own container and volume, and the command above does not touch it:
-
-```bash
-docker compose -f catalogService/docker-compose.yml down -v --rmi local
-docker compose -f ordersService/docker-compose.yml down -v --rmi local
-```
-
-To confirm the machine is clean - the first two should print nothing but a header, the third
-nothing at all:
-
-```bash
-docker ps -a   --filter name=shopping-list --filter name=catalog-service --filter name=orders-service
-docker volume ls --filter name=shopping-list --filter name=catalog-service --filter name=orders-service
-docker images | grep -E 'shopping-list|mssql|elasticsearch|dotnet'
-```
+The second line is what compose cannot do on its own: it only removes images a service
+declares, so the base images the build pulled - the 1.25 GB .NET SDK in particular - survive
+it. Docker refuses to delete one something else still uses, so it is safe as written.
 
 ## Tests
 
-The BFF has them - `cd bff && npm test`. Node's built-in runner, eight tests driving the app
-against fakes of its two ports. It is the layer with logic worth pinning down: composing the
-catalog, resolving an order line against it, and the rejections. The other three projects are
-not covered.
+```bash
+cd bff && npm test          # 9
+cd frontend && npm test     # 9
+```
+
+Node's built-in test runner in both - no test framework and no assertion library anywhere in
+the repository. The BFF tests drive the app against fakes of its two ports; the frontend tests
+cover the two reducers that hold rules rather than plumbing. `catalogService` and
+`ordersService` are thin over their databases and are not covered.
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs lint, typecheck and tests on every
+push.
 
 ## The two screens
 
-**Screen one - shopping list.** The whole catalog arrives in a single request when the page
-mounts - both lists, categories and products. Two dropdowns: choosing a category filters the
-product dropdown to that category's products. Quantity starts at 1. "הוסף מוצר לסל" puts the product
-in the cart, which is shown alongside; adding a product that is already there tops up its
-quantity rather than adding a second line.
+**Shopping list.** The whole catalog arrives in one request when the page mounts. Choosing a
+category filters the product dropdown to that category. "הוסף מוצר לסל" puts the product in the
+cart, which is shown alongside; adding one that is already there tops up its quantity rather
+than adding a second line.
 
-**Screen two - order summary.** Full name, address and email, all required, plus an email
-format check. The selected products and their quantities are listed next to the form.
-"אשר הזמנה" posts the order to the BFF, which validates it, hands it to the orders service,
-and answers with an order id.
-
-## A few decisions worth explaining
-
-**Categories and products stay two lists, all the way through.** The catalog service exposes
-`GET /api/categories` and `GET /api/products`, and products carry a `categoryId`. Nesting the
-products inside a category would bake one screen's layout into the service's contract, and
-would mean you cannot ask for the category list without downloading the whole catalog. The
-BFF fetches both in parallel and answers with `{ categories, products }`, so a page load is
-still a single request from the browser while both lists keep describing themselves. The
-store stays normalised too: the product dropdown is
-`products.filter(p => p.categoryId === selected)`.
-
-**The BFF is the single entry point.** The frontend has one backend to know about and one
-error vocabulary, and does not need to know that categories come from a .NET service and
-orders go to a Node one. An order line it receives is `{ productId, categoryId, quantity }`;
-the BFF looks each one up in the catalog and fills in the product name, unit and category
-name itself, so what gets stored is what the catalog says rather than what a client claimed.
-It also validates the customer details, rejects a product that appears twice, and normalises
-failures from either service.
-
-**The BFF's dependencies are injected.** `bff/src/services/types.ts` declares the two ports
-it is written against. `bff/src/index.ts` is the only file that picks the HTTP
-implementations; routers and the app itself never import them. Swapping either service for a
-fake is a one-line change in one place.
-
-**No prices anywhere.** The assignment does not ask for them, so the model does not carry
-them. Products do carry a unit, which is what makes a quantity mean something - "2 ק"ג"
-rather than a bare "2".
-
-**Thunks and slices, not RTK Query.** One backend with two endpoints, no caching or
-invalidation to speak of. RTK Query would be infrastructure without a payoff at this size.
-
-**One origin.** nginx serves the built app and proxies `/api/*` to the BFF; Vite's dev server
-does the same in development. CORS never comes up in the browser.
-
-**All Hebrew lives in one file.** [`frontend/src/i18n/strings.ts`](frontend/src/i18n/strings.ts)
-holds every string the user sees, including error messages and the tab title. The backends
-validate but answer with stable codes (`required`, `invalid_email`, `duplicate_product`) rather
-than sentences, and the frontend turns those into Hebrew.
-
-## What is not here
-
-No tests, no authentication, no pagination. The database credentials are in
-`docker-compose.yml` in plain text, which is fine for a demo and not fine anywhere else.
-Elasticsearch runs with security disabled and a single node.
+**Order summary.** Name, address and email, all required, plus an email format check. The
+selected products are listed next to the form. "אשר הזמנה" posts the order to the BFF, which
+validates it, hands it to the orders service, and answers with an order id.
