@@ -1,59 +1,43 @@
-import { UpstreamError, type FieldError, type Order } from '../types';
+import { createdOrderSchema, errorBodySchema } from '../schemas/upstream';
+import { UpstreamError, type FieldError } from '../types';
 import type { OrdersService } from './types';
 
-export function createHttpOrdersService(baseUrl: string): OrdersService {
+export function createHttpOrdersService(baseUrl: string, timeoutMs: number): OrdersService {
   return {
     async createOrder(order) {
-      const response = await send(`${baseUrl}/api/orders`, {
+      const response = await send(`${baseUrl}/api/orders`, timeoutMs, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(order),
       });
 
-      const body = (await response.json().catch(() => null)) as OrderResponse | null;
+      const body = await response.json().catch(() => null);
 
       if (!response.ok) {
         // A rejection from the orders service is passed through as-is: it already speaks in
-        // the same field/code vocabulary the browser understands.
-        throw new UpstreamError(response.status, body?.errors ?? fallback);
+        // the same field/code vocabulary the browser understands. One that does not becomes
+        // ours to describe.
+        const errors = errorBodySchema.safeParse(body);
+        throw new UpstreamError(response.status, errors.success ? errors.data.errors : fallback);
       }
 
-      if (typeof body?.orderId !== 'string') {
+      const created = createdOrderSchema.safeParse(body);
+
+      if (!created.success) {
         throw new UpstreamError(502, fallback);
       }
 
-      return { orderId: body.orderId };
-    },
-
-    async getOrder(orderId) {
-      const response = await send(`${baseUrl}/api/orders/${encodeURIComponent(orderId)}`);
-
-      if (response.status === 404) {
-        return null;
-      }
-
-      if (!response.ok) {
-        throw new UpstreamError(502, fallback);
-      }
-
-      const body = (await response.json().catch(() => null)) as Order | null;
-
-      if (!body) {
-        throw new UpstreamError(502, fallback);
-      }
-
-      return body;
+      return created.data;
     },
   };
 }
 
-type OrderResponse = { orderId?: unknown; errors?: FieldError[] };
-
 const fallback: FieldError[] = [{ field: '', code: 'orders_unavailable' }];
 
-async function send(url: string, init?: RequestInit): Promise<Response> {
+async function send(url: string, timeoutMs: number, init?: RequestInit): Promise<Response> {
   try {
-    return await fetch(url, init);
+    // See httpCatalogService: a hung service must fail this request rather than hold it open.
+    return await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
   } catch {
     throw new UpstreamError(503, fallback);
   }
